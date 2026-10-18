@@ -1,0 +1,33 @@
+(()=>{'use strict';
+const dictionaries={
+en:{"Mon espace familial":"Family space","Mon compte / Famille":"Account / Family","Non connecté":"Not signed in","Familles et simulations":"Families and simulations","Créer une famille":"Create a family","Nom de famille":"Family name","Créer":"Create","Membres":"Members","Inviter un membre":"Invite a member","Créer un lien valable 24 h":"Create a 24-hour invitation link","Simulations enregistrées":"Saved simulations","Titre de la simulation":"Simulation title","Sauvegarder la saisie actuelle":"Save current simulation","Continuer avec Google":"Continue with Google","Se déconnecter":"Sign out","Fermer ×":"Close ×","Copier le lien":"Copy invitation link","Demande envoyée. Attendez la validation du propriétaire.":"Request sent. Wait for approval.","Mon foyer":"My household","Mes revenus":"My income","Essentiel":"Simple","Complet":"Advanced","Situation du foyer":"Household situation","Année des revenus":"Income year","Détail de votre simulation":"Simulation breakdown","Salaires imposables":"Taxable salaries","Taux moyen":"Average rate","Tranche marginale":"Marginal bracket","Parts":"Tax shares","Comment commencer ?":"How to get started","Voir le détail par déclarant →":"See details per taxpayer →","Impôt par tranche et par taux":"Tax by bracket and rate","Total au barème brut":"Total before adjustments","Créer un lien valable 24 h":"Create a 24-hour link","Approuver":"Approve","Refuser":"Reject","Supprimer":"Delete","Consulter dans le simulateur":"Open in simulator"},
+es:{"Mon espace familial":"Espacio familiar","Mon compte / Famille":"Cuenta / Familia","Non connecté":"Sin conexión","Familles et simulations":"Familias y simulaciones","Créer une famille":"Crear una familia","Nom de famille":"Nombre de familia","Créer":"Crear","Membres":"Miembros","Inviter un membre":"Invitar a un miembro","Créer un lien valable 24 h":"Crear enlace válido 24 h","Simulations enregistrées":"Simulaciones guardadas","Titre de la simulation":"Título de simulación","Sauvegarder la saisie actuelle":"Guardar simulación actual","Continuer avec Google":"Continuar con Google","Se déconnecter":"Cerrar sesión","Fermer ×":"Cerrar ×","Copier le lien":"Copiar enlace","Mon foyer":"Mi hogar","Mes revenus":"Mis ingresos","Essentiel":"Sencillo","Complet":"Avanzado","Situation du foyer":"Situación familiar","Année des revenus":"Año de ingresos","Détail de votre simulation":"Detalle de simulación","Salaires imposables":"Salarios imponibles","Taux moyen":"Tipo medio","Tranche marginale":"Tramo marginal","Parts":"Partes fiscales","Comment commencer ?":"¿Cómo empezar?","Impôt par tranche et par taux":"Impuesto por tramo y tipo","Approuver":"Aprobar","Refuser":"Rechazar","Supprimer":"Eliminar"},
+pt:{"Mon espace familial":"Espaço familiar","Mon compte / Famille":"Conta / Família","Non connecté":"Não conectado","Familles et simulations":"Famílias e simulações","Créer une famille":"Criar família","Nom de famille":"Nome da família","Créer":"Criar","Membres":"Membros","Inviter un membre":"Convidar membro","Créer un lien valable 24 h":"Criar link válido por 24 h","Simulations enregistrées":"Simulações salvas","Titre de la simulation":"Título da simulação","Sauvegarder la saisie actuelle":"Salvar simulação atual","Continuer avec Google":"Continuar com Google","Se déconnecter":"Sair","Fermer ×":"Fechar ×","Copier le lien":"Copiar link","Mon foyer":"Meu agregado","Mes revenus":"Meus rendimentos","Essentiel":"Simples","Complet":"Avançado","Situation du foyer":"Situação familiar","Année des revenus":"Ano dos rendimentos","Détail de votre simulation":"Detalhes da simulação","Salaires imposables":"Salários tributáveis","Taux moyen":"Taxa média","Tranche marginale":"Escalão marginal","Parts":"Quocientes","Comment commencer ?":"Como começar?","Impôt par tranche et par taux":"Imposto por escalão","Approuver":"Aprovar","Refuser":"Recusar","Supprimer":"Excluir"}
+};
+const fr=Object.fromEntries(Object.entries(dictionaries).flatMap(([lang,dict])=>Object.keys(dict).map(k=>[k,k])));
+const languages={fr:fr,...dictionaries};let lang=localStorage.getItem('tax-ui-lang')||'fr';if(!languages[lang])lang='fr';
+const wrapper=document.createElement('div');wrapper.className='language-picker';wrapper.innerHTML='<label for="site-language">🌐 <span>Langue</span></label><select id="site-language" aria-label="Langue / Language"><option value="fr">Français</option><option value="en">English</option><option value="es">Español</option><option value="pt">Português</option></select><span class="language-notice" id="language-notice"></span>';
+const css=document.createElement('style');css.textContent='.language-picker{display:flex;align-items:center;gap:9px;flex-wrap:wrap;padding:10px max(16px,calc((100vw - 1180px)/2));background:var(--card);border-bottom:1px solid var(--border);font-size:.82rem}.language-picker select{background:var(--bg);color:var(--fg);border:1px solid var(--border);padding:7px 12px;border-radius:9px}.language-notice{color:var(--muted);font-size:.73rem}';document.head.append(css);
+(document.querySelector('.family-bar')||document.querySelector('header'))?.before(wrapper);
+const select=wrapper.querySelector('select'),notice=wrapper.querySelector('#language-notice');select.value=lang;
+let applying=false;
+function translate(){
+if(applying)return;applying=true;
+const nodes=document.createTreeWalker(document.body,NodeFilter.SHOW_TEXT);let node;
+while(node=nodes.nextNode()){
+if(wrapper.contains(node)||node.parentElement?.closest('script,style,textarea,option'))continue;
+const raw=node.nodeValue,trimmed=raw.trim();if(!trimmed)continue;
+const original=node.__originalFr||trimmed;
+if(!node.__originalFr&&Object.keys(fr).includes(trimmed))node.__originalFr=trimmed;
+if(!node.__originalFr)continue;
+const translated=languages[lang][node.__originalFr]||node.__originalFr;
+const lead=raw.match(/^\s*/)?.[0]||'',trail=raw.match(/\s*$/)?.[0]||'';
+if(trimmed!==translated)node.nodeValue=lead+translated+trail;
+}
+document.documentElement.lang=lang;
+notice.textContent=lang==='fr'?'':lang==='en'?'Interface translation in progress · French tax law and calculations unchanged':lang==='es'?'Traducción parcial · normas fiscales francesas sin cambios':'Tradução parcial · regras fiscais francesas inalteradas';
+applying=false;
+}
+select.addEventListener('change',()=>{lang=select.value;localStorage.setItem('tax-ui-lang',lang);translate()});
+let queued=false;const observer=new MutationObserver(()=>{if(applying||queued)return;queued=true;queueMicrotask(()=>{queued=false;translate()})});observer.observe(document.body,{childList:true,subtree:true,characterData:true});translate();
+})();
