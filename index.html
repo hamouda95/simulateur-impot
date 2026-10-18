@@ -11,7 +11,7 @@
 <div class="row"><div><label for="children">Enfants à charge</label><input id="children" type="number" min="0" max="12" value="0"></div><div><label for="alternate">Enfants en résidence alternée</label><input id="alternate" type="number" min="0" max="12" value="0"></div></div>
 <label class="check" id="singleParentRow"><input type="checkbox" id="singleParent"> Parent isolé (case T, selon éligibilité)</label></div>
 <div class="card"><h2>2 · Salaires et fiches de paie</h2><div id="people"></div><p class="hint">Chaque net imposable détecté doit être vérifié. Si moins de 12 fiches sont importées, la moyenne mensuelle est extrapolée à 12 mois : cette estimation ne tient pas compte des variations de revenus. Saisissez le total annuel pour éviter toute extrapolation.</p></div>
-<div class="card"><h2>3 · Autres revenus et déductions</h2><div class="row">
+<div class="card"><h2>3 · Autres revenus et déductions</h2><p class="hint">Renseignez les montants seulement si vous les connaissez. Les revenus particuliers peuvent nécessiter une déclaration complémentaire.</p><div class="row">
 <div><label for="other">Autres revenus nets imposables (€)</label><input type="number" id="other" min="0"></div>
 <div><label for="pension">Pensions alimentaires déductibles (€)</label><input type="number" id="pension" min="0"></div>
 <div><label for="per">Versements PER (€)</label><input type="number" id="per" min="0"></div>
@@ -24,7 +24,7 @@
 <div><label for="care">Frais de garde éligibles hors domicile (€)</label><input id="care" type="number" min="0"></div>
 <div><label for="creditAdvance">Avances de crédit d'impôt déjà perçues (€)</label><input id="creditAdvance" type="number" min="0"></div>
 <div><label for="withheld">Impôt déjà prélevé à la source (€)</label><input id="withheld" type="number" min="0"></div></div><p class="hint">Les dépenses doivent être retenues après aides et dans les limites légales. Les plafonds et exceptions propres à votre situation ne sont pas tous modélisés.</p></div>
-</section><aside><div class="stack">
+<div class="card"><h2>5 · Autres situations fiscales</h2><p class="hint">Pour ne pas donner une fausse précision, les catégories ci-dessous sont signalées comme non couvertes par le moteur actuel. Vous pouvez consulter les rubriques officielles adaptées à votre situation.</p><div class="coverage" id="coverage"></div><p id="coverageNote" class="hint"></p></div></section><aside><div class="stack">
 <div class="card hero"><small>Impôt net estimé avant prélèvement à la source</small><div class="amount" id="estimate">0 €</div><small id="resultNote">Renseignez votre situation pour démarrer.</small><div class="metrics"><div><strong id="average">—</strong><small>Taux moyen indicatif</small></div><div><strong id="marginal">—</strong><small>Tranche marginale</small></div><div><strong id="shares">1</strong><small>Parts</small></div></div></div>
 <div class="card"><h2>Détail de votre simulation</h2><table class="detail"><tbody id="details"></tbody></table></div>
 <div class="card"><h2>Important</h2><p class="hint warn">Ce simulateur ne remplace ni la déclaration ni le calcul de l'administration. Le plafonnement du quotient familial, les décotes et crédits complexes, les revenus particuliers et certaines situations ne sont pas couverts intégralement.</p><p class="hint">Les données et fichiers saisis ne sont pas envoyés à un serveur par cette application. Ne chargez que des documents dont vous êtes autorisé à disposer.</p></div>
@@ -36,7 +36,7 @@ const $=id=>document.getElementById(id),money=n=>Math.round(n).toLocaleString('f
 const parameters={
 '24':{bands:[[0,11497,0],[11497,29315,.11],[29315,83823,.30],[83823,180294,.41],[180294,Infinity,.45]],deductionMin:504,deductionMax:14426,halfShareCap:1791},
 '25':{bands:[[0,11600,0],[11600,29579,.11],[29579,84577,.30],[84577,181917,.41],[181917,Infinity,.45]],deductionMin:509,deductionMax:14555,halfShareCap:1807}};
-parameters['26']=parameters['25'];
+parameters['26']=JSON.parse(JSON.stringify(parameters['25']));parameters['26'].bands[4][1]=Infinity;
 const state={status:'single',people:[{files:[],manual:null,extra:0,expenses:0},{files:[],manual:null,extra:0,expenses:0}]};
 const situations={single:'Célibataire',couple:'Marié(e) / pacsé(e)',separated:'Divorcé(e) / séparé(e)',widowed:'Veuf / veuve'};
 function showPeople(){const host=$('people');host.replaceChildren();const total=state.status==='couple'?2:1;
@@ -60,4 +60,4 @@ const rows=[['Salaires nets imposables',salaryGross],['Frais professionnels déd
 const tbody=$('details');tbody.replaceChildren();for(const [label,value] of rows){if(value===0&& !/Impôt estimé|Solde|Remboursement|Revenu net/.test(label))continue;const tr=document.createElement('tr'),a=document.createElement('td'),b=document.createElement('td');a.textContent=label;b.textContent=money(value);tr.append(a,b);tbody.append(tr)}
 $('yearInfo').textContent=$('year').value==='26'?'Année 2026 : application provisoire du barème des revenus 2025. Le calcul définitif de l’impôt 2027 pourra différer.':'Barème enregistré pour cette année : vérifiez les règles applicables à votre situation.'}
 const status=$('status');Object.entries(situations).forEach(([key,label])=>{const b=document.createElement('button');b.type='button';b.textContent=label;b.dataset.status=key;b.addEventListener('click',()=>{state.status=key;status.querySelectorAll('button').forEach(x=>x.setAttribute('aria-pressed',String(x===b)));$('singleParentRow').classList.toggle('hidden',!['single','separated'].includes(key));showPeople();calculate()});status.append(b)});status.querySelector('button').click();document.querySelectorAll('main input:not([type=file]),#year').forEach(el=>{el.addEventListener('input',calculate);el.addEventListener('change',calculate)});calculate();
-</script><script src="./enhancements.js"></script></body></html>
+</script><script src="./enhancements.js?v=4"></script><script src="./experience.js?v=4"></script></body></html>
