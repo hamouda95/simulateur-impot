@@ -30,11 +30,11 @@ function parsePay(text,name){
 const lines=text.split('\n').map(x=>x.trim()).filter(Boolean),find=re=>lines.find(x=>re.test(x))||'';
 const y=/20(24|25|26)/.exec(name)||/20(24|25|26)/.exec(text.slice(0,1200));
 const out={name,year:y?y[0]:'20'+$('year').value,month:null,net:null,pas:null,annualNet:null,annualPas:null};
-const month=/20(?:24|25|26)[_-](0[1-9]|1[012])|(?:^|[_-])(0[1-9]|1[012])[_-]20(?:24|25|26)/.exec(name);
+const month=/20(?:24|25|26)[_-]?(0[1-9]|1[012])|(?:^|[_-])(0[1-9]|1[012])[_-]20(?:24|25|26)/.exec(name);
 if(month)out.month=Number(month[1]||month[2]);else{const words=['JANVIER','FEVRIER','MARS','AVRIL','MAI','JUIN','JUILLET','AOUT','SEPTEMBRE','OCTOBRE','NOVEMBRE','DECEMBRE'];const normalized=text.slice(0,1200).toUpperCase().normalize('NFD').replace(/[\u0300-\u036f]/g,'');for(let i=0;i<12;i++)if(normalized.includes(words[i]+' '+out.year)){out.month=i+1;break}}
 let a=find(/^NET FISCAL\b/i);if(a){const n=amounts(a.replace(/^NET FISCAL/i,''));if(n.length>=2){out.net=n[0];out.annualNet=n[1]}}
 a=find(/MONTANT NET IMPOSABLE/i);if(a){const n=amounts(a.replace(/^.*?MONTANT NET IMPOSABLE/i,''));if(n.length){out.net=n[0];if(n.length>1)out.annualNet=n.at(-1)}}
-const annual=find(/^ANNUEL\b/i),monthly=find(/^MENSUEL\b/i);if(annual&&monthly){const n=amounts(annual),m=amounts(monthly);if(n.length>=3&&m.length>=3){out.annualNet??=n[2];out.net??=m[2]}}
+const annual=find(/^ANNUEL\b/i),monthly=find(/^MENSUEL\b/i);if(annual&&monthly){const n=amounts(annual),m=amounts(monthly);if(n.length>=4&&m.length>=4){out.annualNet??=n[3];out.net??=m[3]}}
 a=find(/CUMUL PAS ANNUEL/i);if(a){const n=amounts(a);if(n.length)out.annualPas=n.at(-1)}
 a=find(/^PRELEVEMENT A LA SOURCE\b/i);if(a){const n=amounts(a.replace(/^PRELEVEMENT A LA SOURCE/i,''));if(n.length>=2){out.pas=n[0];out.annualPas=n[1]}}
 a=find(/^IMPOT SUR LE REVENU PRELEVE\b/i);if(a){const n=amounts(a.replace(/^IMPOT SUR LE REVENU PRELEVE(?: A LA SOURCE)?/i,''));if(n.length>=3){out.pas=n.at(-1);if(n.length>=4){out.pas=n.at(-2);out.annualPas=n.at(-1)}}}
