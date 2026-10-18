@@ -67,3 +67,66 @@ html,body{max-width:100%;overflow-x:clip}
  button,.tabbar button,.site-steps a,.family-dialog select{touch-action:manipulation}
  .site-steps a{min-height:44px;display:grid;place-items:center}
 }
+
+/* Phone-specific layout: 320–600 px, portrait and landscape. */
+@media (max-width:600px){
+ body{font-size:15px}
+ header{padding:24px 16px 68px}
+ header h1{font-size:clamp(1.6rem,7.1vw,2.1rem);line-height:1.15;letter-spacing:-.035em}
+ header p{font-size:.9rem;line-height:1.5}
+ .site-topline{padding:8px 14px;gap:4px;font-size:.69rem}
+ .site-topline span:last-child{display:none}
+ .tabbar{display:grid!important;grid-template-columns:repeat(3,minmax(0,1fr));width:auto;margin:-39px 10px 16px;padding:4px;border-radius:13px}
+ .tabbar button{width:100%;min-width:0;min-height:54px;font-size:clamp(.64rem,2.7vw,.77rem);padding:8px 3px;line-height:1.2}
+ .new-layout{padding:0 10px}
+ #simulation{gap:12px}
+ #simulation .card{padding:15px;border-radius:13px;margin-bottom:12px}
+ #simulation .card h2{font-size:1.05rem}
+ #simulation .row,#simulation .pay-fields,#simulation .split{grid-template-columns:minmax(0,1fr)!important;gap:10px}
+ #simulation input[type=number],#simulation select,.family-dialog input,.family-dialog select{min-height:46px;font-size:16px}
+ #simulation .choice{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:7px}
+ #simulation .choice button{min-width:0;padding:9px 6px;font-size:.86rem}
+ #simulation .upload{padding:12px;overflow-wrap:anywhere}
+ #simulation .upload input[type=file]{max-width:100%;font-size:.8rem}
+ #simulation .pdfitem{flex-wrap:wrap}
+ #simulation .pdfitem input{max-width:100%}
+ #simulation .hero .amount{font-size:clamp(1.8rem,9vw,2.7rem)}
+ #simulation .metrics{grid-template-columns:repeat(3,minmax(0,1fr));gap:5px}
+ #simulation .metrics div{padding:10px 3px;min-width:0}
+ #simulation .metrics strong{font-size:.94rem}
+ #simulation .metrics small{font-size:.62rem;line-height:1.25;overflow-wrap:anywhere}
+ #simulation .detail{table-layout:fixed}
+ #simulation .detail td{overflow-wrap:anywhere;font-size:.79rem}
+ #simulation .detail td:last-child{width:39%;white-space:normal}
+ .site-steps{grid-template-columns:repeat(2,minmax(0,1fr));gap:6px}
+ .site-steps a{padding:9px 5px;min-height:44px;font-size:.74rem}
+ .site-mode{gap:6px}
+ .site-mode button{flex:1;min-height:44px}
+ .site-actions{display:grid;grid-template-columns:1fr}
+ .site-actions button{width:100%;min-height:46px}
+ #matrix,#breakdown{overflow-wrap:anywhere}
+ #matrix .card,#breakdown .card{padding:15px}
+ #matrix table,#breakdown table{display:block;max-width:100%;overflow-x:auto;-webkit-overflow-scrolling:touch}
+ .family-inner{display:grid;grid-template-columns:minmax(0,1fr) auto;align-items:center;gap:6px 8px}
+ .family-inner strong{min-width:0}
+ .family-inner button{grid-column:2;grid-row:1;font-size:.77rem;padding:9px}
+ .family-inner span{grid-column:1/-1;grid-row:2;min-width:0;overflow-wrap:anywhere;font-size:.73rem}
+ .language-picker{gap:8px;justify-content:space-between}
+ .language-picker .language-notice{flex-basis:100%}
+ .family-dialog{margin:auto;padding:14px;max-height:calc(100dvh - 18px)}
+ .family-dialog h2{font-size:1.2rem;padding-right:74px}
+ .family-dialog .family-item{padding:10px}
+ .family-dialog .actions{display:grid;grid-template-columns:1fr}
+ .family-dialog .actions button{width:100%}
+ .family-dialog button{max-width:100%;white-space:normal}
+}
+@media (max-width:360px){
+ .tabbar button{font-size:.62rem}
+ #simulation .metrics small{font-size:.58rem}
+ .site-steps{grid-template-columns:1fr 1fr}
+}
+@media (max-width:600px) and (orientation:landscape){
+ header{padding-bottom:52px}
+ .tabbar{margin-top:-30px}
+ .family-dialog{max-height:calc(100dvh - 12px)}
+}
