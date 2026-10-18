@@ -1,0 +1,69 @@
+/* Tablet-first refinements: preserve the existing indigo/cyan theme. */
+html,body{max-width:100%;overflow-x:clip}
+#simulation,#simulation>section,#simulation>aside,.new-layout,.card{min-width:0}
+#simulation input,#simulation select,.family-dialog input,.family-dialog select{max-width:100%}
+@media (min-width:601px) and (max-width:1180px){
+ :root{--page-width:100%}
+ header{padding:34px clamp(24px,4vw,56px) 84px}
+ header h1{font-size:clamp(2rem,3.5vw,2.6rem);line-height:1.16}
+ .new-layout{padding:0 clamp(18px,3vw,36px)}
+ .tabbar{margin:-48px clamp(18px,3vw,36px) 24px;padding:6px}
+ .tabbar button{min-height:50px;font-size:clamp(.77rem,1.25vw,.94rem);padding:12px 8px;white-space:normal;line-height:1.25}
+ #simulation{grid-template-columns:minmax(0,1fr)!important;gap:20px}
+ #simulation>section{min-width:0}
+ #simulation>aside{min-width:0}
+ #simulation>aside .stack{position:static!important;display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px;align-items:start}
+ #simulation>aside .stack>.card{margin-bottom:0}
+ #simulation>aside .stack>.hero{grid-column:1/-1}
+ #simulation .card{padding:clamp(20px,2.7vw,28px)}
+ .site-steps{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:9px}
+ .site-steps a{min-width:0;text-align:center;padding:11px 7px}
+ .site-mode button,.site-actions button,.choice button{min-height:46px}
+ .family-inner{padding:12px clamp(20px,3vw,40px)}
+ .family-inner span{min-width:0}
+ .language-picker{padding:10px clamp(20px,3vw,40px)}
+ #matrix,#breakdown{min-width:0}
+}
+@media (min-width:601px) and (max-width:850px){
+ #simulation>aside .stack{grid-template-columns:1fr}
+ #simulation>aside .stack>.hero{grid-column:auto}
+ #simulation .row{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .tabbar{gap:4px}
+ .tabbar button{font-size:.79rem}
+}
+@media (max-width:600px){
+ header{padding:28px 18px 75px}
+ header h1{font-size:clamp(1.75rem,7vw,2.25rem)}
+ .tabbar{margin:-44px 12px 18px;padding:4px;gap:3px}
+ .tabbar button{min-height:48px;padding:8px 4px;font-size:.73rem;line-height:1.25;overflow-wrap:anywhere}
+ .new-layout{padding:0 12px}
+ #simulation{grid-template-columns:minmax(0,1fr)!important}
+ #simulation .row{grid-template-columns:1fr}
+ #simulation .card{padding:17px}
+ #simulation>aside .stack{position:static!important}
+ .site-steps{grid-template-columns:repeat(2,minmax(0,1fr))}
+ .site-steps a{font-size:.78rem}
+ .family-inner{gap:9px;padding:11px 14px}
+ .family-inner strong{font-size:.88rem}
+ .family-inner span{flex-basis:100%;order:3}
+ .family-inner button{margin-left:auto}
+ .language-picker{padding:9px 14px}
+ .metrics{gap:5px}
+ .metrics div{padding:11px 4px}
+}
+.family-dialog{width:min(680px,calc(100vw - 28px));max-width:calc(100vw - 28px);max-height:min(88dvh,920px);padding:clamp(16px,3vw,26px);overscroll-behavior:contain}
+.family-dialog .family-item{min-width:0;overflow-wrap:anywhere}
+.family-dialog input[readonly]{overflow:hidden;text-overflow:ellipsis}
+.family-dialog .actions{align-items:stretch}
+.family-dialog button{min-height:42px;touch-action:manipulation}
+.family-dialog .onboarding-choices button{min-height:76px}
+@media (max-width:600px){
+ .family-dialog{width:calc(100vw - 16px);max-width:calc(100vw - 16px);max-height:92dvh;padding:16px;border-radius:16px}
+ .family-dialog .onboarding-choices{grid-template-columns:1fr}
+ .family-dialog .onboarding-choices button{min-height:58px}
+ .family-dialog .actions button{flex:1}
+}
+@media (hover:none) and (pointer:coarse){
+ button,.tabbar button,.site-steps a,.family-dialog select{touch-action:manipulation}
+ .site-steps a{min-height:44px;display:grid;place-items:center}
+}
