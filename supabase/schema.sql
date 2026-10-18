@@ -78,9 +78,9 @@ begin
  if public.my_family_role(fid) not in ('owner','admin') then raise exception 'Forbidden'; end if;
  if desired_role not in ('viewer','editor','admin') then raise exception 'Invalid role'; end if;
  if valid_hours not between 1 and 168 then raise exception 'Invalid expiry'; end if;
- raw_token:=encode(gen_random_bytes(32),'hex');
+ raw_token:=encode(public.gen_random_bytes(32),'hex');
  insert into public.family_invitations(family_id,token_hash,role,created_by,expires_at)
- values(fid,encode(digest(raw_token,'sha256'),'hex'),desired_role,auth.uid(),now()+make_interval(hours=>valid_hours));
+ values(fid,encode(public.digest(raw_token,'sha256'),'hex'),desired_role,auth.uid(),now()+make_interval(hours=>valid_hours));
  return raw_token;
 end $$;
 create or replace function public.request_family_join(raw_token text) returns uuid
@@ -88,7 +88,7 @@ language plpgsql security definer set search_path='' as $$
 declare inv public.family_invitations%rowtype; uid uuid := auth.uid();
 begin
  if uid is null then raise exception 'Authentication required'; end if;
- select * into inv from public.family_invitations where token_hash=encode(digest(raw_token,'sha256'),'hex') for update;
+ select * into inv from public.family_invitations where token_hash=encode(public.digest(raw_token,'sha256'),'hex') for update;
  if not found or inv.revoked_at is not null or inv.expires_at<=now() or inv.uses>=inv.max_uses then raise exception 'Invitation invalid or expired'; end if;
  if exists(select 1 from public.family_members where family_id=inv.family_id and user_id=uid) then raise exception 'Already a member'; end if;
  insert into public.family_join_requests(family_id,user_id,invitation_id,requested_role)
