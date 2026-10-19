@@ -56,6 +56,7 @@ const cumulative=arr.filter(r=>Number.isFinite(r[cum])).sort((a,b)=>(b.month||0)
 if(cumulative.length)return {value:cumulative[0][cum],source:'cumul '+(cumulative[0].month||'?')+'/'+cumulative[0].year,complete:cumulative[0].month===12};
 const monthly=arr.filter(r=>Number.isFinite(r[key]));return {value:monthly.reduce((a,r)=>a+r[key],0),source:monthly.length+' bulletin(s) mensuels',complete:monthly.length>=12};
 }
+window.taxPayrollClear=function(){records.forEach(arr=>arr.splice(0));};
 window.taxPayrollSnapshot=function(){return [0,1].map(k=>({net:yearly(k,'net'),pas:yearly(k,'pas'),count:records[k].length}))};
 showPeople=function(){
 const host=$('people');host.replaceChildren();
