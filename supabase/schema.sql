@@ -77,6 +77,7 @@ declare raw_token text;
 begin
  if public.my_family_role(fid) not in ('owner','admin') then raise exception 'Forbidden'; end if;
  if desired_role not in ('viewer','editor','admin') then raise exception 'Invalid role'; end if;
+ if desired_role='admin' and public.my_family_role(fid)<>'owner' then raise exception 'Only owner may invite admins'; end if;
  if valid_hours not between 1 and 168 then raise exception 'Invalid expiry'; end if;
  raw_token:=encode(extensions.gen_random_bytes(32),'hex');
  insert into public.family_invitations(family_id,token_hash,role,created_by,expires_at)
