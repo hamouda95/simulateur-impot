@@ -83,11 +83,14 @@ const tax=Math.max(familyTax,baseTax-(s.total-s.base)*2*p.halfShareCap);
 const num=id=>Math.max(0,Number($(id).value)||0);
 const donation=Math.min(tax,taxable*.2,Math.min(num('don75'),1000)*.75+(Math.max(0,num('don75')-1000)+num('don66'))*.66);
 const credits=Math.min(12000,Math.max(0,num('home')-num('homeAid')))*.5+Math.min(num('care'),3500*Math.max(1,num('children')))*.5;
-const due=Math.max(0,Math.round(tax-donation-credits)),pas=people.reduce((a,b)=>a+b.paid,0)+num('withheld'),balance=Math.round(due+num('creditAdvance')-pas);
-$('estimate').textContent=fmt(due);$('resultNote').textContent='Impôt indicatif, hors décote et cas particuliers. PAS annuel : '+fmt(pas);
+const due=Math.max(0,Math.round(tax-donation-credits));
+const pasDeclarant1=Math.max(0,Number(people[0]?.paid)||0),pasDeclarant2=n===2?Math.max(0,Number(people[1]?.paid)||0):0;
+const pasComplementaire=num('withheld'),pas=pasDeclarant1+pasDeclarant2+pasComplementaire;
+const balance=Math.round(due+num('creditAdvance')-pas);
+$('estimate').textContent=fmt(due);$('resultNote').textContent='Impôt indicatif, hors décote et cas particuliers. PAS total du foyer : '+fmt(pas)+' (déclarant 1 : '+fmt(pasDeclarant1)+(n===2?' + déclarant 2 : '+fmt(pasDeclarant2):'')+(pasComplementaire?' + autres PAS : '+fmt(pasComplementaire):'')+')';
 $('average').textContent=taxable?(100*due/taxable).toFixed(1).replace('.',',')+' %':'0 %';
 $('marginal').textContent=Math.round((p.bands.filter(b=>taxable/s.total>b[0]).at(-1)||p.bands[0])[2]*100)+' %';$('shares').textContent=String(s.total).replace('.',',');
-const rows=[['Salaires imposables',salaryGross],['Frais professionnels',-professional],['Revenu net imposable',taxable],['Impôt après plafonnement',tax],['Réduction dons',-donation],['Crédits estimés',-credits],['Impôt net estimé',due],['PAS annuel importé et saisi',-pas],['Avances de crédit déjà perçues',num('creditAdvance')],[balance<0?'Remboursement estimé':'Solde estimé',Math.abs(balance)]];
+const rows=[['Salaires imposables',salaryGross],['Frais professionnels',-professional],['Revenu net imposable',taxable],['Impôt après plafonnement',tax],['Réduction dons',-donation],['Crédits estimés',-credits],['Impôt net estimé',due],['PAS déclarant 1',-pasDeclarant1],...(n===2?[['PAS déclarant 2',-pasDeclarant2]]:[]),...(pasComplementaire?[['Autres PAS du foyer',-pasComplementaire]]:[]),['PAS total du foyer',-pas],['Avances de crédit déjà perçues',num('creditAdvance')],[balance<0?'Remboursement estimé':'Solde estimé',Math.abs(balance)]];
 const body=$('details');body.replaceChildren();for(const [label,value] of rows){const tr=document.createElement('tr'),a=document.createElement('td'),b=document.createElement('td');a.textContent=label;b.textContent=fmt(value);tr.append(a,b);body.append(tr)}
 result={people,due,pas,balance};if(!breakdown.hidden)drawBreakdown();
 };
