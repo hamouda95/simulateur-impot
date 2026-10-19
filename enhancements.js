@@ -56,6 +56,7 @@ const cumulative=arr.filter(r=>Number.isFinite(r[cum])).sort((a,b)=>(b.month||0)
 if(cumulative.length)return {value:cumulative[0][cum],source:'cumul '+(cumulative[0].month||'?')+'/'+cumulative[0].year,complete:cumulative[0].month===12};
 const monthly=arr.filter(r=>Number.isFinite(r[key]));return {value:monthly.reduce((a,r)=>a+r[key],0),source:monthly.length+' bulletin(s) mensuels',complete:monthly.length>=12};
 }
+window.taxPayrollSnapshot=function(){return [0,1].map(k=>({net:yearly(k,'net'),pas:yearly(k,'pas'),count:records[k].length}))};
 showPeople=function(){
 const host=$('people');host.replaceChildren();
 for(let k=0;k<(state.status==='couple'?2:1);k++){const person=state.people[k],box=document.createElement('div');box.innerHTML='<h3>Déclarant '+(k+1)+'</h3><label class="upload">Importer des bulletins PDF <input type="file" accept=".pdf,application/pdf" multiple></label><div class="records"></div><div class="row"><div><label>Net fiscal annuel corrigé (€)</label><input class="annual" type="number" min="0"></div><div><label>Autres revenus salariaux (€)</label><input class="extra" type="number" min="0"></div><div><label>Frais réels (€)</label><input class="expenses" type="number" min="0"></div><div><label>PAS annuel corrigé (€)</label><input class="pas" type="number" min="0"></div></div><p class="hint extraction"></p>';host.append(box);
