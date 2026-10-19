@@ -130,3 +130,28 @@ html,body{max-width:100%;overflow-x:clip}
  .tabbar{margin-top:-30px}
  .family-dialog{max-height:calc(100dvh - 12px)}
 }
+
+/* Compact family workspace and predictable mobile scrolling */
+.family-dialog{box-sizing:border-box;scrollbar-gutter:stable;overscroll-behavior:contain}
+.family-dialog summary{font-weight:700;cursor:pointer;padding:8px 0}
+.family-dialog details[open] summary{margin-bottom:12px}
+.family-dialog .family-item{display:block;min-width:0}
+.family-dialog .family-item>button{margin-top:8px;margin-right:6px}
+.family-dialog .family-item>input,.family-dialog .family-item>select{box-sizing:border-box}
+.family-dialog .invitation-result{min-width:0;max-width:100%;overflow-wrap:anywhere;padding-top:12px}
+.family-dialog .invitation-result input{width:100%;min-width:0}
+.family-dialog .invitation-result canvas,.family-dialog .invitation-result img{max-width:100%;height:auto}
+.family-dialog .muted{line-height:1.55}
+@media(max-width:600px){
+ .family-dialog{position:fixed;inset:8px!important;margin:auto!important;width:calc(100vw - 16px)!important;max-width:calc(100vw - 16px)!important;max-height:calc(100dvh - 16px)!important;padding:18px 16px!important;border-radius:18px;overflow-y:auto;-webkit-overflow-scrolling:touch}
+ .family-dialog h2{font-size:1.12rem;line-height:1.3;margin:5px 0 14px;padding-right:0}
+ .family-dialog #family-close{float:none!important;display:block;margin:0 0 12px auto;font-size:.85rem}
+ .family-dialog .family-item{padding:13px;margin:12px 0}
+ .family-dialog .family-item>button{width:100%;margin:10px 0 0}
+ .family-dialog .family-item input,.family-dialog .family-item select{min-height:48px;font-size:16px}
+ .family-dialog .family-item label{display:block;line-height:1.4}
+ .family-dialog .invitation-result>div{max-width:100%}
+ .family-dialog .invitation-result canvas,.family-dialog .invitation-result img{width:min(210px,100%);height:auto}
+ .family-dialog .actions button{width:100%}
+ .family-dialog .onboarding-choices{grid-template-columns:1fr}
+}
