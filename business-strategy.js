@@ -1,39 +1,56 @@
-/* Module de cadrage stratégique — calculs fiscaux non validés, aucun gagnant chiffré fictif. */
-(()=>{
-'use strict';
-function init(){
- const root=document.getElementById('business-strategy');if(!root)return;
- const fmt=x=>Math.round(x).toLocaleString('fr-FR')+' €';
- root.innerHTML=`<div class="card"><h2>Stratégie d'entreprise · Comparateur</h2>
- <p class="hint">Projection du chiffre d'affaires et identification des statuts à comparer. Les revenus nets, cotisations et impôts nécessitent un moteur métier vérifié ; aucune recommandation chiffrée n'est inventée.</p>
- <div class="row"><div><label for="biz-activity">Activité</label><select id="biz-activity"><option value="data">Freelance Data / Power BI</option><option value="marketing">Agence marketing / agents IA</option><option value="ecommerce">E-commerce</option><option value="import">Commerce B2B / importation</option></select></div><div><label for="biz-experience">Années d'expérience</label><input id="biz-experience" type="number" min="0" max="60" value="6"></div></div>
- <label for="biz-description">Description libre du projet</label><textarea id="biz-description" rows="3" style="width:100%;padding:11px;border:1px solid var(--border);border-radius:9px;background:var(--card);color:var(--fg)" placeholder="Ex. freelance Power BI, 6 ans d'expérience"></textarea>
- <div class="row"><div><label for="biz-rate">CA journalier HT envisagé (€)</label><input id="biz-rate" type="number" min="0" value="550"></div><div><label for="biz-days">Jours facturés/an</label><input id="biz-days" type="number" min="0" max="366" value="180"></div>
- <div><label for="biz-expenses">Dépenses professionnelles annuelles (€)</label><input id="biz-expenses" type="number" min="0" value="8000"></div><div><label for="biz-goal">Objectif</label><select id="biz-goal"><option value="net">Revenu net personnel</option><option value="capital">Réinvestissement</option><option value="social">Protection sociale</option></select></div></div>
- <div class="card hero" style="margin-top:14px"><small>CA annuel HT estimé (hors fiscalité)</small><div class="amount" id="biz-ca">—</div><small id="biz-note"></small></div>
- <h3>Trois statuts à analyser</h3><div id="biz-options"></div>
- <p class="hint warn">La micro-entreprise n'autorise pas la déduction individuelle des frais réels. L'EURL et la SASU ont des régimes de cotisations et d'imposition différents. Le statut gagnant exige de connaître le foyer fiscal, la rémunération, les dividendes et les règles applicables à l'exercice.</p></div>`;
- const charges={
- data:'Matériel informatique, licences Power BI, cloud, formation, coworking, déplacements',
- marketing:'API IA, CRM, publicité, sous-traitance, hébergement',
- ecommerce:'Achats, stock, publicité, transport, commissions, retours',
- import:'Achats, transport, douane, stockage, assurance, transitaires'
- };
- const fields=['biz-activity','biz-rate','biz-days','biz-expenses','biz-goal'];
- function update(){
-  const n=id=>Math.max(0,Number(document.getElementById(id).value)||0);
-  const ca=n('biz-rate')*n('biz-days'),activity=document.getElementById('biz-activity').value,expenses=n('biz-expenses');
-  document.getElementById('biz-ca').textContent=fmt(ca);
-  document.getElementById('biz-note').textContent='Dépenses indiquées : '+fmt(expenses)+' · Dépenses potentielles à examiner : '+charges[activity]+'.';
-  const micro=activity==='data'||activity==='marketing'?'prestations de services':'vente de marchandises';
-  document.getElementById('biz-options').innerHTML=[
-   ['Micro-entreprise','Cotisations sur chiffre d’affaires ; abattement forfaitaire ; seuil et catégorie '+micro+' à contrôler.'],
-   ['EURL à l’IS','Rémunération gérant TNS et bénéfices conservés ; calcul des cotisations et de l’IS à intégrer.'],
-   ['SASU à l’IS','Rémunération président assimilé salarié et dividendes ; calcul des charges et impôts à intégrer.']
-  ].map(([title,desc])=>'<div style="border:1px solid var(--border);border-radius:10px;padding:12px;margin:8px 0"><strong>'+title+'</strong><p class="hint">'+desc+'</p><strong>Net annuel : non calculé</strong></div>').join('');
+/* Parcours guidé métier : progression conditionnelle, sans simulation fiscale non vérifiée. */
+(()=>{'use strict';
+const init=()=>{
+const host=document.getElementById('business-strategy');if(!host)return;
+const state={step:0,answers:{},error:''};
+const activities={data:'Freelance Data / Power BI',marketing:'Agence marketing et agents IA',ecommerce:'E-commerce',import:'Commerce B2B / importation'};
+const euro=n=>Math.round(n).toLocaleString('fr-FR')+' €';
+const safe=x=>String(x??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const questions=[
+ {key:'activity',title:'Quelle activité souhaitez-vous exercer ?',help:'Votre choix détermine les questions suivantes.',type:'choice',options:Object.entries(activities)},
+ {key:'stage',title:'Où en êtes-vous dans votre projet ?',type:'choice',options:[['creation','Je crée mon activité'],['existing','Je suis déjà indépendant / dirigeant'],['transition','Je suis salarié et je prépare une transition']]},
+ {key:'model',title:'Comment comptez-vous générer votre chiffre d’affaires ?',type:'choice',options:a=>a.activity==='data'?[['day','Facturation à la journée (TJM)'],['project','Missions au forfait']]:a.activity==='marketing'?[['subscription','Abonnements mensuels clients'],['project','Prestations au forfait']]:[['sales','Vente de produits avec marge'],['project','Contrats ou commandes B2B']]},
+ {key:'revenue',title:'Quel volume d’activité prévoyez-vous ?',type:'fields',fields:a=>a.model==='day'?[['rate','TJM HT (€)','550'],['days','Jours facturés par an','180']]:a.model==='subscription'?[['price','Revenu mensuel moyen par client (€)','1500'],['clients','Nombre moyen de clients actifs','5']]:a.model==='sales'?[['sales','Ventes annuelles HT (€)','120000'],['cost','Coût d’achat des marchandises (€)','60000']]:[['sales','CA annuel prévisionnel HT (€)','90000']]},
+ {key:'costs',title:'Quels sont vos frais professionnels annuels ?',help:'Indiquez des frais réels, justifiables et exclusivement professionnels. Ne comptez pas deux fois les achats de marchandises.',type:'fields',fields:a=>[['expenses',a.model==='sales'?'Autres frais hors achats (€)':'Frais professionnels hors rémunération (€)','8000'],['experience','Années d’expérience','6']]},
+ {key:'household',title:'Quelle est votre situation fiscale ?',help:'Nécessaire pour analyser le net après impôt sur le revenu.',type:'fields',fields:a=>[['parts','Nombre de parts fiscales (indicatif)','1'],['otherIncome','Autres revenus nets imposables annuels du foyer (€)','0']]},
+ {key:'priority',title:'Quel est votre objectif prioritaire ?',type:'choice',options:[['net','Maximiser mon net personnel'],['invest','Réinvestir les bénéfices'],['balance','Équilibrer revenu et protection sociale']]}
+];
+const count=questions.length;
+const opts=q=>typeof q.options==='function'?q.options(state.answers):q.options;
+const fields=q=>typeof q.fields==='function'?q.fields(state.answers):q.fields;
+const n=k=>Math.max(0,Number(state.answers[k])||0);
+const ca=()=>state.answers.model==='day'?n('rate')*n('days'):state.answers.model==='subscription'?n('price')*n('clients')*12:n('sales');
+function render(){
+ const q=questions[state.step],finished=state.step===count;
+ host.innerHTML='<div class="card" style="max-width:840px;margin:0 auto"><div style="display:flex;justify-content:space-between;gap:10px;align-items:center"><h2>Assistant de stratégie d’entreprise</h2><span class="hint">'+(finished?'Analyse du projet':('Étape '+(state.step+1)+' / '+count))+'</span></div><div style="height:7px;background:var(--border);border-radius:20px;overflow:hidden;margin:12px 0 22px"><div style="width:'+((finished?count:state.step)/count*100)+'%;height:100%;background:#16a34a"></div></div><div id="biz-wizard-body"></div></div>';
+ const body=document.getElementById('biz-wizard-body');
+ if(finished){
+ const revenue=ca(),expenses=n('expenses')+(state.answers.model==='sales'?n('cost'):0);
+ const options=[['Micro-entreprise','Vérifier les seuils, la nature de l’activité et le régime applicable. Frais réels non déductibles individuellement.'],['EURL à l’IS','Évaluer rémunération TNS, cotisations, IS, dividendes et frais professionnels.'],['SASU à l’IS','Évaluer salaire assimilé salarié, charges, IS et dividendes.']];
+ body.innerHTML='<h3>Votre profil entrepreneurial</h3><p><strong>'+safe(activities[state.answers.activity])+'</strong> · '+safe(state.answers.stage)+' · '+safe(state.answers.priority)+'</p><div class="card hero"><small>CA annuel HT prévisionnel</small><div class="amount">'+euro(revenue)+'</div><small>Coûts annuels renseignés : '+euro(expenses)+' · Marge avant rémunération, cotisations et impôts : '+euro(revenue-expenses)+'</small></div><h3>Structures juridiques à comparer</h3>'+options.map(([title,detail])=>'<div style="border:1px solid var(--border);padding:14px;border-radius:12px;margin:10px 0"><strong>'+title+'</strong><p class="hint">'+detail+'</p><small>Net après impôts : calcul non disponible</small></div>').join('')+'<p class="hint warn">Aucun gagnant n’est affiché tant que les règles sociales et fiscales 2026, le régime de TVA, les paramètres du foyer et les scénarios de rémunération ne sont pas calculés et vérifiés. Cette synthèse est un cadrage, pas un conseil fiscal personnalisé.</p><div style="display:flex;gap:10px;flex-wrap:wrap"><button id="biz-back" type="button">← Modifier mes réponses</button><button id="biz-reset" type="button">Recommencer</button></div>';
+ document.getElementById('biz-back').onclick=()=>{state.step=count-1;render()};
+ document.getElementById('biz-reset').onclick=()=>{state.step=0;state.answers={};render()};return;
  }
- fields.forEach(id=>document.getElementById(id).addEventListener('input',update));
- update();
+ let controls='';
+ if(q.type==='choice')controls='<div style="display:grid;gap:10px">'+opts(q).map(([value,label])=>'<label style="display:flex;align-items:center;gap:12px;border:1px solid var(--border);border-radius:12px;padding:14px;cursor:pointer"><input type="radio" name="biz-choice" value="'+safe(value)+'" '+(state.answers[q.key]===value?'checked':'')+'><span>'+safe(label)+'</span></label>').join('')+'</div>';
+ else controls='<div class="row">'+fields(q).map(([key,label,def])=>'<div><label for="biz-'+key+'">'+safe(label)+'</label><input id="biz-'+key+'" type="number" min="0" step="any" value="'+safe(state.answers[key]??def)+'"></div>').join('')+'</div>';
+ body.innerHTML='<h3>'+safe(q.title)+'</h3>'+(q.help?'<p class="hint">'+safe(q.help)+'</p>':'')+controls+'<p id="biz-error" role="alert" style="color:#b91c1c">'+safe(state.error)+'</p><div style="display:flex;justify-content:space-between;gap:12px;margin-top:20px"><button type="button" id="biz-prev" '+(state.step===0?'disabled':'')+'>← Retour</button><button type="button" id="biz-next" style="background:#4338ca;color:white;padding:12px 20px;border:0;border-radius:9px;cursor:pointer">'+(state.step===count-1?'Voir mon analyse →':'Continuer →')+'</button></div>';
+ document.getElementById('biz-prev').onclick=()=>{state.step--;state.error='';render()};
+ document.getElementById('biz-next').onclick=()=>{
+  if(q.type==='choice'){
+   const selected=body.querySelector('input[name="biz-choice"]:checked');
+   if(!selected){state.error='Sélectionnez une réponse pour continuer.';render();return}
+   const prior=state.answers[q.key];state.answers[q.key]=selected.value;
+   if(prior!==selected.value&&['activity','model'].includes(q.key)){for(const k of ['model','rate','days','price','clients','sales','cost'])if(k!==q.key)delete state.answers[k]}
+  }else{
+   for(const [key,label] of fields(q)){const input=document.getElementById('biz-'+key);if(input.value.trim()===''||!Number.isFinite(Number(input.value))||Number(input.value)<0){state.error='Renseignez un montant valide pour : '+label;render();return}state.answers[key]=input.value}
+   if(q.key==='revenue'&&ca()<=0){state.error='Le chiffre d’affaires prévisionnel doit être supérieur à zéro.';render();return}
+   if(q.key==='household'&&n('parts')<1){state.error='Indiquez au moins une part fiscale.';render();return}
+  }
+  state.error='';state.step++;render();
+ };
 }
+render();
+};
 if(document.readyState==='loading')document.addEventListener('DOMContentLoaded',init);else init();
 })();
