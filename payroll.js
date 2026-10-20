@@ -15,8 +15,8 @@ function number(s){if(s==null)return null;const t=String(s).replace(/[\s\u00a0\u
 function findAmount(text,re){const m=text.match(re);return m?number(m[1]):null}
 function extract(text){
  const v={};
- const employerMatch=text.match(/(?:^|\\s)(GeoPost SA)(?:\\s|$)/i);v.employer_name=employerMatch?employerMatch[1]:'';
- const siretMatch=text.match(/SIRET\\s*:\\s*([0-9]{14})/i);v.employer_siret=siretMatch?siretMatch[1]:'';
+ v.employer_name=''; // Aucune hypothèse sur l'employeur : confirmation humaine obligatoire.
+ const siretMatch=text.match(/SIRET\s*:\s*([0-9]{14})/i);v.employer_siret=siretMatch?siretMatch[1]:'';
  const rules={
  gross_salary:/MONTANT\s+BRUT\s+([\d\s.,]+?)(?=\s+(?:SANTÉ|SANTE|Sécu|SECURITE))/i,
  employee_contributions:/TOTAL\s+DES\s+COTISATIONS\s+ET\s+CONTRIBUTIONS\s+([\d\s.,]+?)\s+([\d\s.,]+)/i,
@@ -78,7 +78,7 @@ async function save(){
   const values={};
   for(const k of fields){const el=document.querySelector('[data-payroll="'+k+'"]');if(el.value.trim()==='')throw Error('Champ à vérifier : '+labels[k]);const val=Number(el.value);if(!Number.isFinite(val)||val<0)throw Error('Valeur incorrecte : '+labels[k]);values[k]=val}
   if(Math.abs(values.net_before_income_tax-values.withholding_tax_amount-values.net_paid)>0.03)throw Error('Contrôle incohérent : net avant impôt − PAS ≠ net versé.');
-  if(Math.abs(values.gross_salary-values.employee_contributions-values.net_social)>0.03)throw Error('Contrôle incohérent : brut − cotisations ≠ net social.');
+  // Le net social ne se déduit pas systématiquement du brut moins les cotisations : ne pas bloquer à tort.
   const employer=document.getElementById('payroll-employer').value.trim(),siret=document.getElementById('payroll-siret').value.trim();
   if(!employer||!/^[0-9]{14}$/.test(siret))throw Error('Employeur ou SIRET invalide.');
   const leave=[];
@@ -111,8 +111,8 @@ async function renderHistory(){
  const row=document.createElement('div');row.style='padding:12px;border:1px solid var(--border);border-radius:10px;margin:8px 0';
  const title=document.createElement('strong');title.textContent=item.period_end+' · '+item.employer_name;
  const info=document.createElement('p');info.textContent='Brut : '+money(item.gross_salary)+' · Net après impôt : '+money(item.net_paid)+' · PAS : '+money(item.withholding_tax_amount);
- const download=document.createElement('button');download.textContent='Consulter PDF';download.type='button';download.onclick=async()=>{const {data,error}=await client.storage.from('payroll-private').createSignedUrl(item.storage_path,60);if(error)status(error.message,true);else window.open(data.signedUrl,'_blank','noopener')};
- const del=document.createElement('button');del.textContent='Supprimer';del.type='button';del.style.marginLeft='10px';del.onclick=async()=>{if(!confirm('Supprimer définitivement ce bulletin et ses données ?'))return;const {error}=await client.from('payroll_slips').delete().eq('id',item.id);if(error){status(error.message,true);return}await client.storage.from('payroll-private').remove([item.storage_path]);renderHistory()};
+ const download=document.createElement('button');download.textContent='Consulter PDF';download.disabled=!item.storage_path;download.type='button';download.onclick=async()=>{const {data,error}=await client.storage.from('payroll-private').createSignedUrl(item.storage_path,60);if(error)status(error.message,true);else window.open(data.signedUrl,'_blank','noopener')};
+ const del=document.createElement('button');del.textContent='Supprimer';del.type='button';del.style.marginLeft='10px';del.onclick=async()=>{if(!confirm('Supprimer définitivement ce bulletin et ses données ?'))return;const {error}=await client.from('payroll_slips').delete().eq('id',item.id);if(error){status(error.message,true);return}if(item.storage_path){const removed=await client.storage.from('payroll-private').remove([item.storage_path]);if(removed.error)status('Données supprimées, mais suppression du PDF à vérifier : '+removed.error.message,true)}renderHistory()};
  row.append(title,info,download,del);target.append(row);
  }
 }
