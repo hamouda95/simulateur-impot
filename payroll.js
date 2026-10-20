@@ -14,30 +14,29 @@ const content=()=>document.getElementById('payroll-content');
 function number(s){if(s==null)return null;const t=String(s).replace(/[\s\u00a0\u202f]/g,'').replace(/\.(?=\d{3}(?:[,.]|$))/g,'').replace(',','.');const n=Number(t);return Number.isFinite(n)?n:null}
 function findAmount(text,re){const m=text.match(re);return m?number(m[1]):null}
 function extract(text){
- const v={};
- v.employer_name=''; // Aucune hypothèse sur l'employeur : confirmation humaine obligatoire.
- const siretMatch=text.match(/SIRET\s*:\s*([0-9]{14})/i);v.employer_siret=siretMatch?siretMatch[1]:'';
- const rules={
- gross_salary:/MONTANT\s+BRUT\s+([\d\s.,]+?)(?=\s+(?:SANTÉ|SANTE|Sécu|SECURITE))/i,
- employee_contributions:/TOTAL\s+DES\s+COTISATIONS\s+ET\s+CONTRIBUTIONS\s+([\d\s.,]+?)\s+([\d\s.,]+)/i,
- net_social:/MONTANT\s+NET\s+SOCIAL\s+([\d\s.,]+)/i,
- net_before_income_tax:/MONTANT\s+NET\s+[ÀA]\s+PAYER\s+AVANT\s+IMP[ÔO]T\s+SUR\s+LE\s+REVENU\s+([\d\s.,]+)/i,
- net_taxable:/Montant\s+net\s+imposable\s+([\d\s.,]+)/i,
- net_paid:/MONTANT\s+NET\s+[ÀA]\s+PAYER\s*\(EN\s+EUROS\)\s+([\d\s.,]+)/i,
- total_employer_cost:/TOTAL\s+VERS[ÉE]\s+PAR\s+L.EMPLOYEUR\s+([\d\s.,]+)/i
- };
- for(const [key,re] of Object.entries(rules))v[key]=findAmount(text,re);
- const contributions=text.match(rules.employee_contributions);
- if(contributions){v.employee_contributions=number(contributions[1]);v.employer_contributions=number(contributions[2])}
- const pas=text.match(/Imp[ôo]t\s+sur\s+le\s+revenu\s+pr[ée]lev[ée]\s+[àa]\s+la\s+source\s+([\d\s.,]+)\s+([\d\s.,]+)\s+([\d\s.,]+)/i);
- if(pas){v.withholding_tax_rate=number(pas[2]);v.withholding_tax_amount=number(pas[3])}
- const period=text.match(/P[ée]riode\s+du\s+(\d{2}\/\d{2}\/\d{4})\s+au\s+(\d{2}\/\d{2}\/\d{4})/i);
+ const v={employer_name:'',employer_siret:''};
+ const amount='([0-9][0-9 .\\u00a0\\u202f]*[,.][0-9]{2})';
+ const match=(label,flags='i')=>findAmount(text,new RegExp(label+'\\s+'+amount,flags));
+ const siret=text.match(/SIRET\\s*:\\s*([0-9]{14})/i);if(siret)v.employer_siret=siret[1];
+ const period=text.match(/P[ée]riode\\s+du\\s+(\\d{2}\\/\\d{2}\\/\\d{4})\\s+au\\s+(\\d{2}\\/\\d{2}\\/\\d{4})/i);
  const date=d=>d?d.slice(6)+'-'+d.slice(3,5)+'-'+d.slice(0,2):'';
  v.period_start=period?date(period[1]):'';
  v.period_end=period?date(period[2]):'';
+ v.gross_salary=match('MONTANT\\s+BRUT');
+ v.net_social=match('MONTANT\\s+NET\\s+SOCIAL');
+ v.net_before_income_tax=match('MONTANT\\s+NET\\s+[ÀA]\\s+PAYER\\s+AVANT\\s+IMP[ÔO]T\\s+SUR\\s+LE\\s+REVENU');
+ v.net_taxable=match('Montant\\s+net\\s+imposable');
+ v.net_paid=match('MONTANT\\s+NET\\s+[ÀA]\\s+PAYER\\s*\\(EN\\s+EUROS\\)');
+ v.total_employer_cost=match('TOTAL\\s+VERS[ÉE]\\s+PAR\\s+L.EMPLOYEUR');
+ const cot=text.match(new RegExp('TOTAL\\s+DES\\s+COTISATIONS\\s+ET\\s+CONTRIBUTIONS\\s+'+amount+'\\s+'+amount,'i'));
+ v.employee_contributions=cot?number(cot[1]):null;
+ v.employer_contributions=cot?number(cot[2]):null;
+ const pas=text.match(new RegExp('Imp[ôo]t\\s+sur\\s+le\\s+revenu\\s+pr[ée]lev[ée]\\s+[àa]\\s+la\\s+source\\s+'+amount+'\\s+([0-9]+[,.][0-9]{1,3})\\s+'+amount,'i'));
+ v.withholding_tax_rate=pas?number(pas[2]):null;
+ v.withholding_tax_amount=pas?number(pas[3]):null;
  const leave={};
- for(const [key,re] of Object.entries({acquired:/Acquis\s+([\d,.]+)\s+([\d,.]+)\s+([\d,.]+)\s+([\d,.]+)/i,taken:/Pris\s+([\d,.]+)\s+([\d,.]+)\s+([\d,.]+)\s+([\d,.]+)/i,remaining:/Restant\s+([\d,.]+)\s+([\d,.]+)\s+([\d,.]+)\s+([\d,.]+)/i})){
- const m=text.match(re);if(m)for(let i=1;i<=4;i++){const type=['cp_n','cp_n_minus_1','rtt','recovery'][i-1];(leave[type]??={})[key]=number(m[i])}
+ for(const [key,re] of Object.entries({acquired:/Acquis\\s+([\\d,.]+)\\s+([\\d,.]+)\\s+([\\d,.]+)\\s+([\\d,.]+)/i,taken:/Pris\\s+([\\d,.]+)\\s+([\\d,.]+)\\s+([\\d,.]+)\\s+([\\d,.]+)/i,remaining:/Restant\\s+([\\d,.]+)\\s+([\\d,.]+)\\s+([\\d,.]+)\\s+([\\d,.]+)/i})){
+  const m=text.match(re);if(m)for(let i=1;i<=4;i++){const type=['cp_n','cp_n_minus_1','rtt','recovery'][i-1];(leave[type]??={})[key]=number(m[i])}
  }
  return {values:v,leave};
 }
