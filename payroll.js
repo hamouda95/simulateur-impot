@@ -15,6 +15,8 @@ function number(s){if(s==null)return null;const t=String(s).replace(/[\s\u00a0\u
 function findAmount(text,re){const m=text.match(re);return m?number(m[1]):null}
 function extract(text){
  const v={};
+ const employerMatch=text.match(/(?:^|\\s)(GeoPost SA)(?:\\s|$)/i);v.employer_name=employerMatch?employerMatch[1]:'';
+ const siretMatch=text.match(/SIRET\\s*:\\s*([0-9]{14})/i);v.employer_siret=siretMatch?siretMatch[1]:'';
  const rules={
  gross_salary:/MONTANT\s+BRUT\s+([\d\s.,]+?)(?=\s+(?:SANTÉ|SANTE|Sécu|SECURITE))/i,
  employee_contributions:/TOTAL\s+DES\s+COTISATIONS\s+ET\s+CONTRIBUTIONS\s+([\d\s.,]+?)\s+([\d\s.,]+)/i,
@@ -47,6 +49,7 @@ function view(){
   if(file.size>10*1024*1024||file.size===0||!(file.type==='application/pdf'||file.name.toLowerCase().endsWith('.pdf'))){status('PDF invalide ou supérieur à 10 Mo.',true);return}
   try{
    if(!window.pdfjsLib)throw Error('Le lecteur PDF est indisponible.');
+   window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
    const bytes=await file.arrayBuffer();const pdf=await window.pdfjsLib.getDocument({data:bytes}).promise;
    if(pdf.numPages>5)throw Error('Bulletin de plus de 5 pages : vérification manuelle requise.');
    let text='';rawLines=[];
@@ -63,7 +66,7 @@ function review(){
  const v=parsed.values;
  const inputs=fields.map(k=>'<label style="display:block;margin:8px 0">'+escape(labels[k])+'<input style="display:block;width:100%;max-width:360px" type="number" step="0.01" min="0" data-payroll="'+k+'" value="'+(v[k]??'')+'" placeholder="À vérifier"></label>').join('');
  const leave=['cp_n','cp_n_minus_1','rtt','recovery'].map(type=>'<fieldset style="margin:10px 0"><legend>'+escape(type)+'</legend>'+['acquired','taken','remaining'].map(k=>'<label style="margin-right:10px">'+({acquired:'Acquis',taken:'Pris',remaining:'Restant'}[k])+' <input type="number" min="0" step="0.001" style="width:90px" data-leave="'+type+':'+k+'" value="'+(parsed.leave[type]?.[k]??'')+'"></label>').join('')+'</fieldset>').join('');
- document.getElementById('payroll-review').innerHTML='<h3>2. Vérifier les données extraites</h3><p class="hint">L’extraction PDF peut se tromper, notamment sur les colonnes de cotisations. Les champs vides nécessitent une saisie manuelle. Ne validez que les valeurs vérifiées.</p><label>Début de période <input type="date" id="payroll-start" value="'+escape(v.period_start)+'"></label> <label>Fin de période <input type="date" id="payroll-end" value="'+escape(v.period_end)+'"></label><label style="display:block">Nom employeur <input id="payroll-employer" value="GeoPost SA"></label><label style="display:block">SIRET employeur <input id="payroll-siret" value="34001239200122" maxlength="14"></label><div class="row">'+inputs+'</div><h3>Compteurs de congés</h3>'+leave+'<label style="display:block;margin:12px 0"><input type="checkbox" id="payroll-confirm"> Je confirme avoir vérifié les montants et autorise leur stockage privé.</label><button type="button" id="payroll-save">3. Enregistrer ce bulletin</button>';
+ document.getElementById('payroll-review').innerHTML='<h3>2. Vérifier les données extraites</h3><p class="hint">L’extraction PDF peut se tromper, notamment sur les colonnes de cotisations. Les champs vides nécessitent une saisie manuelle. Ne validez que les valeurs vérifiées.</p><label>Début de période <input type="date" id="payroll-start" value="'+escape(v.period_start)+'"></label> <label>Fin de période <input type="date" id="payroll-end" value="'+escape(v.period_end)+'"></label><label style="display:block">Nom employeur <input id="payroll-employer" value="'+escape(v.employer_name)+'"></label><label style="display:block">SIRET employeur <input id="payroll-siret" value="'+escape(v.employer_siret)+'" maxlength="14"></label><div class="row">'+inputs+'</div><h3>Compteurs de congés</h3>'+leave+'<label style="display:block;margin:12px 0"><input type="checkbox" id="payroll-confirm"> Je confirme avoir vérifié les montants et autorise leur stockage privé.</label><button type="button" id="payroll-save">3. Enregistrer ce bulletin</button>';
  document.getElementById('payroll-save').onclick=save;
 }
 async function save(){
