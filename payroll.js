@@ -2,7 +2,7 @@
 (()=>{'use strict';
 const root=document.getElementById('payroll-app');if(!root)return;
 const cfg=window.FAMILY_BACKEND||{};
-const client=cfg.url&&cfg.anonKey&&window.supabase?window.supabase.createClient(cfg.url,cfg.anonKey):null;
+const client=window.familySupabaseClient||(cfg.url&&cfg.anonKey&&window.supabase?window.supabase.createClient(cfg.url,cfg.anonKey,{auth:{storageKey:'family-auth-token'}}):null);
 const money=n=>Number(n||0).toLocaleString('fr-FR',{style:'currency',currency:'EUR'});
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const labels={gross_salary:'Salaire brut',employee_contributions:'Cotisations salariales',employer_contributions:'Cotisations patronales',net_social:'Net social',net_before_income_tax:'Net avant impôt',net_taxable:'Net imposable',withholding_tax_rate:'Taux PAS (%)',withholding_tax_amount:'Impôt prélevé',net_paid:'Net versé',total_employer_cost:'Coût employeur'};
@@ -45,7 +45,7 @@ function view(){
  content().innerHTML='<label for="payroll-file"><strong>1. Choisir un bulletin PDF (10 Mo maximum)</strong></label><input type="file" id="payroll-file" accept="application/pdf,.pdf"><p class="hint">Le document n’est pas envoyé au serveur tant que vous ne confirmez pas.</p><div id="payroll-review"></div><h3>Historique enregistré</h3><div id="payroll-history"></div>';
  document.getElementById('payroll-file').onchange=async e=>{
   const file=e.target.files[0];if(!file)return;
-  if(file.size>10*1024*1024||file.size===0||!(file.type==='application/pdf'||file.name.toLowerCase().endsWith('.pdf'))){status('PDF invalide ou supérieur à 10 Mo.',true);return}
+  if(file.size>10*1024*1024||file.size===0||!file.name.toLowerCase().endsWith('.pdf')){status('PDF invalide ou supérieur à 10 Mo.',true);return}
   try{
    if(!window.pdfjsLib)throw Error('Le lecteur PDF est indisponible.');
    window.pdfjsLib.GlobalWorkerOptions.workerSrc='https://cdnjs.cloudflare.com/ajax/libs/pdf.js/3.11.174/pdf.worker.min.js';
@@ -75,16 +75,16 @@ async function save(){
   const start=document.getElementById('payroll-start').value,end=document.getElementById('payroll-end').value;
   if(!start||!end||start>end)throw Error('Dates de période invalides.');
   const values={};
-  for(const k of fields){const el=document.querySelector('[data-payroll="'+k+'"]');if(el.value.trim()==='')throw Error('Champ à vérifier : '+labels[k]);const val=Number(el.value);if(!Number.isFinite(val)||val<0)throw Error('Valeur incorrecte : '+labels[k]);values[k]=val}
-  if(Math.abs(values.net_before_income_tax-values.withholding_tax_amount-values.net_paid)>0.03)throw Error('Contrôle incohérent : net avant impôt − PAS ≠ net versé.');
+  for(const k of fields){const el=document.querySelector('[data-payroll="'+k+'"]');if(el.value.trim()===''){values[k]=null;continue}const val=Number(el.value);if(!Number.isFinite(val)||val<0)throw Error('Valeur incorrecte : '+labels[k]);values[k]=val}
+  if([values.net_before_income_tax,values.withholding_tax_amount,values.net_paid].every(x=>x!==null)&&Math.abs(values.net_before_income_tax-values.withholding_tax_amount-values.net_paid)>0.03){if(!confirm('Attention : net avant impôt − PAS diffère du net versé (indemnités ou retenues possibles). Avez-vous vérifié ce montant sur le bulletin ?'))throw Error('Vérification des montants nécessaire.');}
   // Le net social ne se déduit pas systématiquement du brut moins les cotisations : ne pas bloquer à tort.
   const employer=document.getElementById('payroll-employer').value.trim(),siret=document.getElementById('payroll-siret').value.trim();
   if(!employer||!/^[0-9]{14}$/.test(siret))throw Error('Employeur ou SIRET invalide.');
   const leave=[];
   for(const type of ['cp_n','cp_n_minus_1','rtt','recovery']){
    const record={leave_type:type};
-   for(const k of ['acquired','taken','remaining']){const x=document.querySelector('[data-leave="'+type+':'+k+'"]');if(x.value.trim()==='')throw Error('Compteur manquant : '+type+' / '+k);record[k]=Number(x.value);if(!Number.isFinite(record[k])||record[k]<0)throw Error('Compteur invalide')}
-   leave.push(record);
+   for(const k of ['acquired','taken','remaining']){const x=document.querySelector('[data-leave="'+type+':'+k+'"]');record[k]=x.value.trim()===''?null:Number(x.value);if(record[k]!==null&&(!Number.isFinite(record[k])||record[k]<0))throw Error('Compteur invalide')}
+   if(['acquired','taken','remaining'].some(k=>record[k]!==null))leave.push(record);
   }
   const {data:auth,error:authError}=await client.auth.getUser();if(authError||!auth?.user||auth.user.id!==user.id)throw Error('Session expirée, reconnectez-vous.');
   const {data:existing,error:checkError}=await client.from('payroll_slips').select('id').eq('user_id',user.id).eq('employer_siret',siret).eq('period_start',start).eq('period_end',end).maybeSingle();
@@ -94,7 +94,7 @@ async function save(){
   if(uploaded.error)throw uploaded.error;
   const {data:slip,error:dbError}=await client.from('payroll_slips').insert({...values,user_id:user.id,employer_name:employer,employer_siret:siret,period_start:start,period_end:end,source_filename:currentFile.name,storage_path:path,extraction_status:'reviewed',additional_data:{source:'browser_pdf_review',leave_reviewed:true}}).select('id').single();
   if(dbError)throw dbError;
-  const {error:leaveError}=await client.from('payroll_leave_balances').insert(leave.map(x=>({...x,slip_id:slip.id,user_id:user.id})));
+  const {error:leaveError}=leave.length?await client.from('payroll_leave_balances').insert(leave.map(x=>({...x,slip_id:slip.id,user_id:user.id}))):{error:null};
   if(leaveError){await client.from('payroll_slips').delete().eq('id',slip.id);throw leaveError}
   status('Bulletin et congés enregistrés. Les lignes de cotisations détaillées nécessitent encore un parseur validé.');parsed=null;currentFile=null;view();
  }catch(err){if(path)await client.storage.from('payroll-private').remove([path]);status(err.message||'Échec de l’enregistrement.',true)}
