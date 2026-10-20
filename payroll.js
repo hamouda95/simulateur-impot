@@ -2,7 +2,7 @@
 (()=>{'use strict';
 const root=document.getElementById('payroll-app');if(!root)return;
 const cfg=window.FAMILY_BACKEND||{};
-const client=window.familySupabaseClient||(cfg.url&&cfg.anonKey&&window.supabase?window.supabase.createClient(cfg.url,cfg.anonKey,{auth:{storageKey:'family-auth-token'}}):null);
+const client=window.familySupabaseClient||(cfg.url&&cfg.anonKey&&window.supabase?window.supabase.createClient(cfg.url,cfg.anonKey,{auth:{detectSessionInUrl:true,persistSession:true,autoRefreshToken:true}}):null);
 const money=n=>Number(n||0).toLocaleString('fr-FR',{style:'currency',currency:'EUR'});
 const escape=s=>String(s??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
 const labels={gross_salary:'Salaire brut',employee_contributions:'Cotisations salariales',employer_contributions:'Cotisations patronales',net_social:'Net social',net_before_income_tax:'Net avant impôt',net_taxable:'Net imposable',withholding_tax_rate:'Taux PAS (%)',withholding_tax_amount:'Impôt prélevé',net_paid:'Net versé',total_employer_cost:'Coût employeur'};
